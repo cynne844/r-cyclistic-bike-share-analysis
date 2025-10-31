@@ -1,0 +1,460 @@
+---
+title: "Divvy Cyclistic Bike-Share Case Study"
+author: "Cynthia Ichalut"
+date: "2025-08-29"
+output: html_document
+
+---
+
+
+# Background
+
+Cyclistic, a Chicago-based bike-share company, has grown to a fleet of over 5,800 bicycles and 692 docking stations since its launch in 2016. Cyclistic stands out by offering reclining bikes, hand tricycles, and cargo bikes, making its service accessible to people with disabilities and others who can't use a regular bike. Majority of the riders use the traditional bikes.
+While its marketing has historically relied on flexible pricing to attract a broad customer base, with pricing options such as single-ride passes, full-day passes, and annual memberships.Financial analysis has revealed that annual members are significantly more profitable than casual riders.  
+
+
+
+## Business Task
+
+The primary business task is to analyze Cyclistic's historical trip data to understand how casual riders and annual members differ in their riding habits. Through this process, data-driven insights will be used to identify trends and provide actionable recommendations, with the ultimate goal of developing a targeted marketing strategy to convert casual riders into more profitable annual members.
+
+
+
+### Data Sources Used
+
+* The primary data used for this analysis is Cyclistic's historical bike trip data. Which is a public dataset containing information on trips taken by both casual riders and annual members from Jan to March in 2019 and 2020,with detailed information for each bike trip i.e ride_id, start_time, end_time, and station information.
+
+* Due to data privacy restrictions, personally identifiable information about Cyclistic riders was inaccessible, limiting linking pass purchases to credit card numbers to 
+determine if casual riders are repeat customers or local residents. As a result, this analysis focuses exclusively on behavioral patterns derived from the trip data to understand the differences between annual members and casual riders.
+
+
+
+## Data Cleaning Process
+
+The process involved:
+
+* Loading the libraries.
+
+* Converting dates and times to a proper format.
+
+* Standardizing and merging the 2019 and 2020 data sets
+
+* Creating new columns for analysis, such as ride_length_mins, day_of_week, month and year.
+
+* Joining the trip data with the station data based on their respective date and station ID columns.
+
+
+
+#### 1. Loading the necessary libraries
+
+
+```{r Loading libraries}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+```
+
+
+
+
+#### 2. Import and view the the Divvy 2019 Q1 and Divvy 2020 Q1 datasets
+
+The primary datasets used are the Divvy 2019 Q1 and Divvy 2020 Q1 datasets.
+
+```{r Importing datasets}
+library(readr)
+Divvy_2019 <- read_csv("C:/Users/PC/Downloads/Divvy_Trips/Divvy_Trips_2019_Q1 - Divvy_Trips_2019_Q1.csv")
+Divvy_2020 <- read_csv("C:/Users/PC/Downloads/Divvy_Trips/Divvy_Trips_2020_Q1 - Divvy_Trips_2020_Q1.csv")
+View(Divvy_2019)
+View(Divvy_2020)
+```
+
+* The first data frame (Divvy_2019) contains 365,069 rows and 12 columns. It includes key information like trip duration, user type, and station IDs.
+
+* The second data frame (Divvy_2020) contains 426,887 rows and 13 columns. It includes similar information but also contains latitude and longitude coordinates for both the start and end stations of each ride. 
+
+* They both have different column types and names. 
+
+
+
+
+
+#### 3. Renamed the columns in the 2019 dataset to match the 2020 dataset and drop other columns
+
+Both datasets have different column names, making them incompatible for combining into a single data frame. To ensure consistency, the 2019 columns were renamed to match the 2020 data set. 
+
+```{r Renaming columns}
+print(2019)
+colnames(Divvy_2019)
+print(2020)
+colnames(Divvy_2020)
+Divvy_2019_New <- Divvy_2019 %>% 
+  rename(
+    ride_id = trip_id,
+    rideable_type = bikeid,
+    started_at = start_time,
+    ended_at = end_time,
+    start_station_name = from_station_name,
+    start_station_id = from_station_id,
+    end_station_name = to_station_name,
+    end_station_id = to_station_id,
+    member_casual = usertype) %>% 
+  select( -gender, -birthyear, -tripduration)
+
+glimpse(Divvy_2019_New)
+glimpse(Divvy_2020)
+```
+
+
+
+#### 4. Changed the data types in 2019 dataset to make it compatible with 2020 dataset 
+
+```{r Changing data types}
+Divvy_2019_New <- Divvy_2019_New %>%
+  mutate(
+    ride_id = as.character(ride_id),
+    rideable_type = as.character(rideable_type),
+    start_station_id = as.character(start_station_id),
+    end_station_id = as.character(end_station_id),
+    started_at = ymd_hms(started_at),
+    ended_at = ymd_hms(ended_at)
+  ) 
+# 2020
+Divvy_2020 <- Divvy_2020 %>%
+  mutate(
+    started_at = ymd_hms(started_at),
+    ended_at = ymd_hms(ended_at),
+    start_station_id = as.character(start_station_id),
+    end_station_id = as.character(end_station_id)
+  )
+
+colnames(Divvy_2019_New)
+colnames(Divvy_2020)
+```
+
+
+
+#### 5. Combined the 2019 and 2020 Datasets
+
+```{r Combining the two datasets}
+all_trips <- bind_rows(Divvy_2019_New, Divvy_2020)
+glimpse(all_trips)
+```
+
+The new data frame; all_trips dataset has 791956 rows and 13 columns.
+
+
+
+#### 6. Corrected the inconsistent values in the member_casual column
+
+In the member_casual column The 2019 dataset uses "Subscriber" and "Customer," while the 2020 dataset uses "member" and "casual" to categorize the riders. For uniformity the 2019 values will be converted to "member" and "casual" to match the 2020 values.
+
+```{r Standardizing the member_casual column}
+all_trips <- all_trips %>%
+  mutate(member_casual = recode(member_casual,
+                                "Subscriber" = "member",
+                                "Customer" = "casual"))
+
+unique(all_trips$member_casual)
+```
+
+
+
+#### 7. Created a new column - ride_length_mins
+
+To highlight the time difference between the start and end of each trip in minutes.
+
+```{r Ride length in minutes}
+all_trips$ride_length_mins <- as.numeric(difftime(all_trips$ended_at, all_trips$started_at, units = "mins"))
+
+glimpse(all_trips)
+```
+
+
+
+#### 8. Created new columns for day of the week, month, and year and remove missing Data, filter out very short rides, and rides longer than 16 hours.
+
+Addition of day of the week, month and year columns will be essential in comparing total rides and average ride duration by day of the week, month and years. 
+
+Extremely short rides (< 60 seconds) is filtered out as it may be due to system tests or aborted rentals and excessively long rides (> 16 hours) too, likely due to missing end-time data or tracking failures.
+
+```{r Addition of new columns and filtering out very short and long rides}
+all_trips_clean <- all_trips %>%
+  mutate(
+    day_of_week = wday(started_at, label = TRUE),
+    month = month(started_at, label = TRUE),
+    year = year(started_at)
+  ) %>% 
+  filter(ride_length_mins > 1) %>% 
+  filter(ride_length_mins <= 960)
+glimpse(all_trips_clean)
+```
+
+
+
+#### 9. Created a data frame of all unique stations and their coordinates 
+
+Created new data frame containing all unique start and end stations with their coordinates, removed missing or duplicate entries and combined it into a single, comprehensive table.
+
+Applied the <str_trim()> and <str_to_lower()> function to standardize the station names by converting all text to lowercase and removing any extra spaces.
+
+```{r Creating a coordinates table with station names, latitude, and longitude}
+start_stations_clean <- all_trips_clean %>%
+  select(start_station_name, start_lat, start_lng) %>%
+  rename(station_name = start_station_name, lat = start_lat, lng = start_lng) %>%
+  mutate(station_name = str_trim(station_name)) %>%
+  mutate(station_name = str_to_lower(station_name)) %>%
+  distinct()
+
+end_stations_clean <- all_trips_clean %>%
+  select(end_station_name, end_lat, end_lng) %>%
+  rename(station_name = end_station_name, lat = end_lat, lng = end_lng) %>%
+  mutate(station_name = str_trim(station_name)) %>%
+  mutate(station_name = str_to_lower(station_name)) %>%
+  distinct()
+
+stations_table_clean <- bind_rows(start_stations_clean, end_stations_clean) %>%
+  distinct(station_name, .keep_all = TRUE)
+
+head(stations_table_clean)
+```
+
+
+
+
+
+# ANALYSIS PROCESS
+
+
+
+
+#### 1. Compared Total Rides and Average Trip Duration(minutes) for each rider type
+
+```{r}
+rider_summary <- all_trips_clean %>%
+  group_by(member_casual) %>%
+  summarise(
+    total_rides = n(),
+    avg_ride_length_minutes = mean(ride_length_mins, na.rm = TRUE) 
+  ) %>%
+  ungroup()
+
+head(rider_summary)
+```
+
+
+#Visualized rider volume
+```{r}
+ggplot(rider_summary, aes(x = member_casual, y = total_rides, fill = member_casual)) +
+  geom_col(width = 0.5) + 
+  geom_text(aes(label = scales::comma(total_rides))) +
+    labs(
+    title = "Total Rides by Rider Type",
+    subtitle = "Comparing Casual and Member Rider Trips",
+    x = "Rider Type",
+    y = "Total Rides"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5),
+  )
+
+```
+
+
+
+#### Summary
+
+* Members took more than 10 times the number of rides as casual riders (716,269 vs. 67,251). This shows that annual members are the company's most consistent and frequent users. This reinforces the idea that focusing on member retention and conversion is the right business strategy. 
+
+* Casual riders take much longer trips on average. Their average ride length is over 36 minutes, which is more than three times longer than a member's average trip of about 11 minutes.
+
+
+
+
+#### 2. Analyzed Average Ride Length(minutes) and ridership by day of the week
+
+```{r}
+ridership_summary_by_day <- all_trips_clean %>%
+  group_by(member_casual, day_of_week) %>%
+  summarise(
+    total_rides = n(),
+    avg_ride_length_minutes = mean(ride_length_mins, na.rm = TRUE),
+    .groups = 'drop'
+  )
+print(ridership_summary_by_day)
+```
+
+
+
+#### Visualize Ridership by the Day of the Week Analysis using a bar chart
+
+
+```{r}
+ggplot(ridership_summary_by_day) + aes(x = day_of_week, y = total_rides, fill = member_casual) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs( 
+    title = "Ridership Summary by Day of the Week and Rider Type",
+    x = "Day of the Week",
+    y = "Total_rides",
+    fill = "Rider Type") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+#### Average Ride Length By Day of the Week
+
+
+```{r}
+ggplot(ridership_summary_by_day) + aes(x = day_of_week, y = avg_ride_length_minutes, group = member_casual, color = member_casual) +
+  geom_line(linewidth = 1.5) +
+  geom_point(shape = "circle", size = 4) +
+  labs(
+    title = "Average Ride Length by Day of the Week",
+    subtitle = "Casual vs. Member Riders",
+    x = "Day of the Week",
+    y = "Average Ride Length (Minutes)",
+    color = "Rider Type"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+##### Summary
+
+* Casual riders consistently use the bike-sharing service on weekends. with Saturday and Sunday having the highest total rides (13,368 and 18,485 respectively). They also take significantly longer trips than members, with their average ride length peaking on Sunday at 39.3 minutes and Saturday at 36.3 minutes. While their weekday rides are shorter, they are still notably longer than a member's average trip.This group's behavior is consistent with people using the bikes for leisure activities.
+
+* In contrast Members ridership is highest during the weekdays. The total rides on these days are more than double the number on weekends. Their average ride length remains short and consistent across all days, suggesting they use the bikes for a reliable, short-distance purpose, most likely daily commuting to work or school.
+
+* Weekday vs. Weekend Behavior: Casual riders ride for leisure on weekends, while members ride more during the week.
+
+
+
+
+#### 3. Calculate Total Rides and Average Ride Length by Month
+
+```{r}
+monthly_summary <- all_trips_clean %>%
+group_by(member_casual, month) %>%
+  summarise(
+    total_rides = n(),
+    avg_ride_length_mins = mean(ride_length_mins, na.rm = TRUE),
+    .groups = 'drop')
+
+print(monthly_summary)
+```
+
+
+#### Summary
+
+* The number of rides for casual riders increases significantly as the weather improves. It more than triples from January (12,241 rides) to March (40,206 rides).  This indicates that as the weather begins to warm up in March, casual riders are much more likely to use the service for outdoor, recreational activities.
+
+* Members consistently take a much higher volume of rides compared to casual riders each month. While their ridership also increases from January (233,422 rides) to March (263,984 rides) it is more stable and consistent. This supports the idea that members use the bikes for consistent, year-round transportation, with a moderate increase in numbers as the weather becomes more favorable.
+
+
+
+
+#### Visualize the Monthly Trends
+
+
+```{r Total Rides by Month}
+ggplot(monthly_summary) + aes(x = month, y = total_rides, group = member_casual, colour = member_casual) +
+  geom_line(linewidth = 1.5) +
+  geom_point(size = 4, shape = "circle") +
+  labs(
+    title = "Total Rides by Month",
+    subtitle = "Casual vs. Member Riders",
+    x = "Month",
+    y = "Total Rides",
+    color = "Rider Type"
+  ) + 
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+#### Average ride length by month
+
+
+```{r}
+# Plot 2: Average Ride Length by Month
+ggplot(monthly_summary, aes(x = month, y = avg_ride_length_mins, group = member_casual, color = member_casual)) +
+  geom_line(linewidth = 1.5) +
+  geom_point(size = 3) +
+  labs(
+    title = "Average Ride Length by Month",
+    subtitle = "Casual vs. Member Riders",
+    x = "Month",
+    y = "Average Ride Length (Minutes)",
+    color = "Rider Type"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_color_manual(values = c("casual" = "#F9A825", "member" = "#0288D1")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+#### Summary
+
+
+* The average ride length for casual riders remains consistently high, ranging from 33.68 minutes in January to 36.96 minutes in March. This reinforces the hypothesis that casual riders use the bikes for extended, leisurely trips, regardless of the month.
+
+Members: Members maintain a very short and consistent average ride length, at around 11 minutes each month. This indicates their use is primarily for quick, functional trips like commuting or errands, a behavior that remains stable throughout the quarter.
+
+
+
+
+
+#### 4. Count and Rank Popular Start Stations for rider types
+
+
+```{r}
+top_start_stations <- all_trips_clean %>%
+  group_by(member_casual, start_station_name) %>%
+  count(name = "total_rides") %>%
+  ungroup() %>%
+  group_by(member_casual) %>%
+  slice_max(order_by = total_rides, n = 10) %>%
+  ungroup() %>%
+  arrange(member_casual)
+
+
+print(top_start_stations)
+```
+
+
+* The most popular stations for casual riders are concentrated around major tourist attractions and recreational areas in Chicago. This include; Streeter Dr & Grand Ave, Lake Shore Dr & Monroe St, Shedd Aquarium, Millennium Park, Adler Planetarium etc.
+
+* These locations are popular leisure destinations, suggesting that casual riders are likely tourists or locals using the bikes for sightseeing or recreational activities along the lakefront and in downtown parks.
+
+* In contrast, the top start stations for members are located in central business districts and near major train stations and office buildings. These include; Canal St & Adams St, clinton St & Washington Blvd, Clinton St & Madison St, Franklin St & Monroe St etc.
+
+* These stations are common transit hubs, indicating that members primarily use the bikes for commuting and short-distance travel.
+
+* Michigan Ave & Washington St, appears on both lists. This suggests it is a central hub that serves both commuters (members) and tourists (casual riders). 
+
+
+
+
+
+
+# Recommendations
+
+
+
+1. Casual riders tend to use the service for leisure and are most active during the weekend and warmer months. This provides the best opportunity to convert them to members by placing digital ads at high-traffic stations near parks and other popular spots. The ads should clearly demonstrate how a membership is a better value than buying multiple day passes.
+
+
+2. Introduce a low-cost, short-term pass that acts as a stepping stone i.e. monthly or quartely passes offering unlimited rides, with a built-in incentive to upgrade. By offering a discount on annual membership after a certain number of uses, this strategy lowers the entry barrier and smoothly converts casual riders into annual members.
+
+3. To convert casual riders to annual members, shift their perception of Cyclistic from a leisure tool to a daily utility. Launch a campaign that highlights how members use the bikes for cost-effective commutes and errands. 
