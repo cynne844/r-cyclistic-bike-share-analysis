@@ -3,7 +3,7 @@
 
 ## Project Summary
 
-This project analyzes the 2019-2020 Q1 historical trip data for Cyclistic, a Chicago-based bike-share company. The goal is to identify distinct patterns between **casual riders** and **annual members** to develop a targeted marketing strategy aimed at converting casual riders into annual members.
+This project analyzes the 2019-2020 Q1 historical trip data for Cyclistic, a Chicago bike-share company. The goal was to identify distinct patterns between **casual riders** and **annual members** to develop a targeted marketing strategy aimed at converting casual riders into annual members.
 
 ### Business Objective
 
@@ -26,13 +26,13 @@ Steps undertaken include:
 2. Changed the `usertype` column in the 2019 data ("Subscriber," "Customer") to match the 2020 format ("member," "casual").
 3. Calculated **`ride_length_mins`** and extracted **`day_of_week`**, **`month`**, and **`year`** from the timestamp column for comparative analysis.
 4. Removed invalid or extreme outliers: rides less than 1 minute (system tests) and rides longer than 16 hours (960 minutes, likely data errors or missing end times).
-5. Created a standardized and cleaned table of all unique station coordinates to support potential geographic visualization (e.g., using `str_trim()` and `str_to_lower()`).
+5. Created a standardized and cleaned table of all unique station coordinates to support potential geographic visualization.
 
 
 
 ## Key Findings and Insights
 
-The analysis confirmed significant differences in trip volume, duration, and usage context between the two customer segments.
+The analysis confirmed significant differences in trip volume, duration and usage context between the two customer segments.
 
 ### 1. Trip Volume and Duration
 
@@ -47,7 +47,7 @@ The analysis confirmed significant differences in trip volume, duration, and usa
 ### Image 1: Total Rides by Rider Type
 ![Image 1](Image1.png)
 
-2. Annual Members are consistent, high-frequency users focused on short, reliable weekday commuting. While Casual Riders primarily use the service for extended weekend leisure, with their total ridership rapidly tripling from January to March, demonstrating a reliance on warm weather for recreational use.
+2. Annual Members are consistent high volume users focused on short reliable weekday commuting. While Casual Riders primarily use the service for extended weekend leisure, with their total ridership tripling from January to March, demonstrating a reliance on warm weather for recreational use.
 
 ### Image 2: Ridership Summary by Day of the Week and Rider Type
 ![Image 2](Image2.png)
@@ -72,7 +72,7 @@ The analysis confirmed significant differences in trip volume, duration, and usa
 1. Casual riders tend to use the service for leisure and are most active during the weekend and warmer months. This provides the best opportunity to convert them to members by placing digital ads at high-traffic stations near parks and other popular spots. The ads should clearly demonstrate how a membership is a better value than buying multiple day passes.
 
 
-2. Introduce a low-cost, short-term pass that acts as a stepping stone i.e. monthly or quartely passes offering unlimited rides, with a built-in incentive to upgrade. By offering a discount on annual membership after a certain number of uses, this strategy lowers the entry barrier and smoothly converts casual riders into annual members.
+2. Introduce a low cost, short term pass that acts as a stepping stone i.e. monthly or quartely passes offering unlimited rides, with a built in incentive to upgrade. By offering a discount on annual membership after a certain number of uses, this strategy lowers the entry barrier and smoothly converts casual riders into annual members.
 
 3. To convert casual riders to annual members, shift their perception of Cyclistic from a leisure tool to a daily utility. Launch a campaign that highlights how members use the bikes for cost-effective commutes and errands. 
 
